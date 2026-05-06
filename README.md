@@ -1,16 +1,16 @@
 # 🛡️ MikroTik-Managed (Network Automation & Provisioning)
 
-[![Latest Version](https://img.shields.io/github/v/release/devhunter-git/MikroTik-Managed)](https://github.com/devhunter-git/MikroTik-Managed/releases)
+[![Latest Version](https://img.shields.io/github/v/release/devhuntersecurity/MikroTik-Managed)](https://github.com/devhuntersecurity/MikroTik-Managed/releases)
 [![Maintenance Status](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/devhunter-git/MikroTik-Managed/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![GitHub Issues](https://img.shields.io/github/issues/devhunter-git/MikroTik-Managed)](https://github.com/devhunter-git/MikroTik-Managed/issues)
-[![GitHub Stars](https://img.shields.io/github/stars/devhunter-git/MikroTik-Managed?style=social)](https://github.com/devhunter-git/MikroTik-Managed/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/devhuntersecurity/MikroTik-Managed)](https://github.com/devhuntersecurity/MikroTik-Managed/issues)
+[![GitHub Stars](https://img.shields.io/github/stars/devhuntersecurity/MikroTik-Managed?style=social)](https://github.com/devhuntersecurity/MikroTik-Managed/stargazers)
 [![RouterOS Architecture](https://img.shields.io/badge/RouterOS-v6%20%2F%20v7-orange.svg)](https://mikrotik.com/)
 
 ---
 
 ## 📈 Stargazers Over Time
-[![Stargazers over time](https://starchart.cc/devhunter-git/MikroTik-Managed.svg?variant=adaptive)](https://starchart.cc/devhunter-git/MikroTik-Managed)
+[![Stargazers over time](https://starchart.cc/devhuntersecurity/MikroTik-Managed.svg?variant=adaptive)](https://starchart.cc/devhuntersecurity/MikroTik-Managed)
 
 **MikroTik-Managed** adalah repositori *production-ready* yang dirancang untuk otomatisasi infrastruktur jaringan. Fokus pada keamanan (**Hardening**), efisiensi **Provisioning**, dan sistem **Disaster Recovery** bagi para Network Engineer profesional.
 
