@@ -1,0 +1,8 @@
+# Copy paste perintah mikrotik dibawah per list, setelah itu restart totolink & mikrotik anda.
+# Wajib redirect semua request DNS dari semua totolink ke mikrotik.
+
+/file remove [find name=Update-C2-IP-Malware-Totolink-Refresh.rsc]; 
+/tool fetch https://raw.githubusercontent.com/devhunter-git/MikroTik-Managed/refs/heads/main/Update-C2-IP-Malware-Totolink-Refresh.rsc; 
+/import Update-C2-IP-Malware-Totolink-Refresh.rsc verbose=yes ; 
+/file remove [find name=Update-C2-IP-Malware-Totolink-Refresh.rsc]; 
+/console clear-history

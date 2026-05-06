@@ -1,0 +1,45 @@
+# =========================================================================================
+# Id-Guard DNS akan memblokir domain malware, gambling, nsfw dan iklan/tracker.
+# Konfigurasi ini hanya support di MikroTik RouterOS v7 terbaru.
+# Jika RAM router Anda kurang dari 1GB, silakan turunkan nilai cache-size menjadi 8292KiB.
+# Pastikan anda sudah memblokir DNS dari sisi WAN/VPN agar tidak Open Resolver. 
+# Selamat menikmati layanan Id-Guard ID by Dev'Hunter Security.
+# =========================================================================================
+
+# 1. IP ADDRESS LIST (Local Private IP by RFC1918)
+/ip firewall address-list add address=10.0.0.0/8 list=LOCAL-ONLY comment="RFC1918"
+/ip firewall address-list add address=172.16.0.0/12 list=LOCAL-ONLY comment="RFC1918"
+/ip firewall address-list add address=192.168.0.0/16 list=LOCAL-ONLY comment="RFC1918"
+
+# 2. DNS SETTINGS (Optimized for v7)
+# Catatan: Jika RAM < 1GB, ganti cache-size=65536KiB menjadi cache-size=8292KiB
+/ip dns set allow-remote-requests=yes cache-max-ttl=1d cache-size=65536KiB servers=103.157.116.69
+
+# 3. REDIRECT NAT (Force Id-Guard DNS)
+/ip firewall nat
+add action=redirect chain=dstnat comment="DNS 69: Force UDP" dst-port=53 protocol=udp src-address-list=LOCAL-ONLY to-ports=53
+add action=redirect chain=dstnat comment="DNS 69: Force TCP" dst-port=53 protocol=tcp src-address-list=LOCAL-ONLY to-ports=53
+
+# 4. SYSTEM SCHEDULER (Sync & Maintenance)
+/system scheduler
+:do { remove [find name~"flush_cache|Mode"] } on-error={}
+
+add name=flush_cache interval=12h start-time=00:00:00 policy=read,write,test \
+    on-event="/ip dns cache flush"
+
+add name="Mode Secondary [sync. Id-Guard DNS]" interval=1d start-time=01:30:00 policy=read,write,test \
+    comment="Auto Set DNS (Backup saat Sync)" \
+    on-event="/ip dns set servers=1.1.1.2,9.9.9.9"
+
+add name="Mode Primary dns 69" interval=1d start-time=02:00:00 policy=read,write,test \
+    comment="Auto Set DNS (Kembali ke Utama)" \
+    on-event="{ /ip dns set servers=103.157.116.69; /ip dns cache flush }"
+
+# 5. FIREWALL FILTER (Anti Open Resolver dari interface WAN / VPN)
+# Pastikan interface yang anda tambahkan adalah interface WAN dan juga VPN (Jika anda menggunakan VPN).
+/interface list
+:do { add name=WAN-PROTECT } on-error={}
+/interface list member add interface="(*Tambahkan interface VPN anda)" list=WAN-PROTECT
+/interface list member add interface="(*Tambahkan interface WAN anda)" list=WAN-PROTECT
+/ip firewall filter add action=drop chain=input comment="Block Open Recursive DNS TCP" dst-port=53,5353,853 in-interface-list=WAN-PROTECT protocol=tcp
+/ip firewall filter add action=drop chain=input comment="Block Open Recursive DNS UDP" dst-port=53,5353,853 in-interface-list=WAN-PROTECT protocol=udp
