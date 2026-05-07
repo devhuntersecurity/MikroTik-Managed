@@ -46,7 +46,7 @@ Jika Anda merasa terbantu dengan skrip ini, pertimbangkan untuk memberikan dukun
 [![Support via Saweria](https://img.shields.io/badge/Support-Saweria-orange)](https://saweria.co/DevHunter)
 
 ### Scan QR Code for Donations
-<img src="documentations/saweria.png" alt="Donation QR Code" width="200" height="200">
+<img src="documentations/qris-donate.png" alt="Donation QR Code" width="200" height="200">
 
 ---
 
