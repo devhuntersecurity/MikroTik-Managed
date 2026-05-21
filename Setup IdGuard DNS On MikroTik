@@ -1,45 +1,150 @@
 # =========================================================================================
 # Id-Guard DNS akan memblokir domain malware, gambling, nsfw dan iklan/tracker.
 # Konfigurasi ini hanya support di MikroTik RouterOS v7 terbaru.
-# Jika RAM router Anda kurang dari 1GB, silakan turunkan nilai cache-size menjadi 8292KiB.
-# Pastikan anda sudah memblokir DNS dari sisi WAN/VPN agar tidak Open Resolver. 
+# Jika RAM router Anda kurang dari 1GB, silakan turunkan nilai cache-size.
+# Pastikan anda sudah memblokir DNS dari sisi WAN/VPN agar tidak Open Resolver.
+# Pastikan Id-Guard DNS sudah di routing melalui VPN, dan di cek ping sudah replay.
 # Selamat menikmati layanan Id-Guard ID by Dev'Hunter Security.
 # =========================================================================================
 
+# =========================================================================================
 # 1. IP ADDRESS LIST (Local Private IP by RFC1918)
-/ip firewall address-list add address=10.0.0.0/8 list=LOCAL-ONLY comment="RFC1918"
-/ip firewall address-list add address=172.16.0.0/12 list=LOCAL-ONLY comment="RFC1918"
-/ip firewall address-list add address=192.168.0.0/16 list=LOCAL-ONLY comment="RFC1918"
+# =========================================================================================
+/ip firewall address-list
+add address=10.0.0.0/8 list=LOCAL-ONLY comment="RFC1918"
+add address=172.16.0.0/12 list=LOCAL-ONLY comment="RFC1918"
+add address=192.168.0.0/16 list=LOCAL-ONLY comment="RFC1918"
 
-# 2. DNS SETTINGS (Optimized for v7)
-# Catatan: Jika RAM < 1GB, ganti cache-size=65536KiB menjadi cache-size=8292KiB
-/ip dns set allow-remote-requests=yes cache-max-ttl=1d cache-size=65536KiB servers=103.157.116.69
+# =========================================================================================
+# 2. DNS SETTINGS (Optimized for RouterOS v7)
+# =========================================================================================
+# Catatan:
+# Jika RAM < 1GB, ganti cache-size=65536KiB menjadi 8192KiB atau sesuai kapasitas RAM router.
 
+/ip dns
+set allow-remote-requests=yes \
+    cache-max-ttl=1d \
+    cache-size=65536KiB \
+    query-server-timeout=2s \
+    query-total-timeout=10s \
+    max-concurrent-queries=1000 \
+    max-concurrent-tcp-sessions=200 \
+    servers=103.157.116.69
+
+# =========================================================================================
 # 3. REDIRECT NAT (Force Id-Guard DNS)
+# =========================================================================================
 /ip firewall nat
-add action=redirect chain=dstnat comment="DNS 69: Force UDP" dst-port=53 protocol=udp src-address-list=LOCAL-ONLY to-ports=53
-add action=redirect chain=dstnat comment="DNS 69: Force TCP" dst-port=53 protocol=tcp src-address-list=LOCAL-ONLY to-ports=53
+add action=redirect chain=dstnat comment="DNS 69: Force UDP" \
+    dst-port=53 protocol=udp src-address-list=LOCAL-ONLY to-ports=53
 
-# 4. SYSTEM SCHEDULER (Sync & Maintenance)
+add action=redirect chain=dstnat comment="DNS 69: Force TCP" \
+    dst-port=53 protocol=tcp src-address-list=LOCAL-ONLY to-ports=53
+
+# =========================================================================================
+# 4. NETWATCH FAILOVER (Auto Backup DNS)
+# =========================================================================================
+/tool netwatch
+add comment="IdGuard-DNS" \
+    disabled=no \
+    host=103.157.116.69 \
+    type=icmp \
+    interval=5s \
+    timeout=2s \
+    thr-loss-percent=15% \
+    down-script="\
+        /log warning \"Id-Guard DNS DOWN - Switch Secondary DNS\"; \
+        /ip dns set servers=1.1.1.2,9.9.9.9; \
+        /ip dns cache flush" \
+    up-script="\
+        /log info \"Id-Guard DNS UP - Restore Primary DNS\"; \
+        /ip dns set servers=103.157.116.69; \
+        /ip dns cache flush"
+
+# =========================================================================================
+# 5. SYSTEM SCHEDULER (Sync & Maintenance)
+# =========================================================================================
 /system scheduler
-:do { remove [find name~"flush_cache|Mode"] } on-error={}
 
-add name=flush_cache interval=12h start-time=00:00:00 policy=read,write,test \
-    on-event="/ip dns cache flush"
+# Flush DNS Cache
+add interval=12h \
+    name=flush_cache \
+    on-event="/ip dns cache flush" \
+    policy=read,write,test \
+    start-date=2026-04-16 \
+    start-time=00:00:00
 
-add name="Mode Secondary [sync. Id-Guard DNS]" interval=1d start-time=01:30:00 policy=read,write,test \
-    comment="Auto Set DNS (Backup saat Sync)" \
-    on-event="/ip dns set servers=1.1.1.2,9.9.9.9"
+# Backup DNS Saat Sync
+add comment="Auto Set DNS (Backup saat Sync)" \
+    interval=1d \
+    name="Mode Secondary [sync. dns 69]" \
+    on-event="\
+        /log warning \"Id-Guard Sync Mode - Switch Secondary DNS\"; \
+        /ip dns set servers=1.1.1.2,9.9.9.9; \
+        /ip dns cache flush" \
+    policy=read,write,test \
+    start-date=2026-04-16 \
+    start-time=01:30:00
 
-add name="Mode Primary dns 69" interval=1d start-time=02:00:00 policy=read,write,test \
-    comment="Auto Set DNS (Kembali ke Utama)" \
-    on-event="{ /ip dns set servers=103.157.116.69; /ip dns cache flush }"
+# Restore DNS Utama
+add comment="Auto Set DNS (Kembali ke Utama)" \
+    interval=1d \
+    name="Mode Primary dns 69" \
+    on-event="\
+        /log info \"Id-Guard Primary DNS Restored\"; \
+        /ip dns set servers=103.157.116.69; \
+        /ip dns cache flush" \
+    policy=read,write,test \
+    start-date=2026-04-16 \
+    start-time=02:00:00
 
-# 5. FIREWALL FILTER (Anti Open Resolver dari interface WAN / VPN)
-# Pastikan interface yang anda tambahkan adalah interface WAN dan juga VPN (Jika anda menggunakan VPN).
+# Disable Netwatch Saat Maintenance
+add comment="Auto Set Netwatch" \
+    interval=1d \
+    name="Netwatch Disable [sync. dns 69]" \
+    on-event="\
+        /log warning \"Disable Netwatch During Sync\"; \
+        /tool netwatch disable [find comment=\"IdGuard-DNS\"]" \
+    policy=read,write,test \
+    start-date=2026-04-16 \
+    start-time=01:30:00
+
+# Enable Netwatch Setelah Maintenance
+add comment="Auto Set Netwatch" \
+    interval=1d \
+    name="Netwatch Enable [sync. dns 69]" \
+    on-event="\
+        /log info \"Enable Netwatch After Sync\"; \
+        /tool netwatch enable [find comment=\"IdGuard-DNS\"]" \
+    policy=read,write,test \
+    start-date=2026-04-16 \
+    start-time=02:00:00
+
+# =========================================================================================
+# 6. FIREWALL FILTER (Anti Open Resolver dari Interface WAN / VPN)
+# =========================================================================================
+# Pastikan interface yang anda tambahkan adalah interface WAN dan VPN.
+
 /interface list
 :do { add name=WAN-PROTECT } on-error={}
-/interface list member add interface="(*Tambahkan interface VPN anda)" list=WAN-PROTECT
-/interface list member add interface="(*Tambahkan interface WAN anda)" list=WAN-PROTECT
-/ip firewall filter add action=drop chain=input comment="Block Open Recursive DNS TCP" dst-port=53,5353,853 in-interface-list=WAN-PROTECT protocol=tcp
-/ip firewall filter add action=drop chain=input comment="Block Open Recursive DNS UDP" dst-port=53,5353,853 in-interface-list=WAN-PROTECT protocol=udp
+
+/interface list member
+add interface="(*Tambahkan interface VPN anda)" list=WAN-PROTECT
+add interface="(*Tambahkan interface WAN anda)" list=WAN-PROTECT
+
+/ip firewall filter
+add action=drop chain=input comment="Block Open Recursive DNS TCP" \
+    connection-state=new \
+    dst-port=53,5353,853 \
+    in-interface-list=WAN-PROTECT \
+    protocol=tcp
+
+add action=drop chain=input comment="Block Open Recursive DNS UDP" \
+    connection-state=new \
+    dst-port=53,5353,853 \
+    in-interface-list=WAN-PROTECT \
+    protocol=udp
+
+# =========================================================================================
+# END CONFIG
+# =========================================================================================
