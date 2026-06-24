@@ -51,7 +51,7 @@ add comment="IdGuard-DNS" \
     type=icmp \
     interval=5s \
     timeout=2s \
-    thr-loss-percent=15% \
+    thr-loss-percent=50% \
     down-script="\
         /log warning \"Id-Guard DNS DOWN - Switch Secondary DNS\"; \
         /ip dns set servers=1.1.1.2,9.9.9.9; \
