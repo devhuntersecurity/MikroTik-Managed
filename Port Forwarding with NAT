@@ -1,0 +1,47 @@
+# ============================================================
+# Template Port Forwarding (DST-NAT) MikroTik
+# ============================================================
+# PERHATIAN:
+# Sebelum melakukan copy paste konfigurasi ini, ubah terlebih
+# dahulu nilai IP Address dan Port sesuai kebutuhan jaringan Anda.
+#
+# Parameter yang wajib disesuaikan:
+#
+# dst-address
+# → Ganti dengan IP Public, IP WAN, atau IP tujuan yang digunakan.
+#
+# dst-port
+# → Ganti dengan port layanan yang akan diteruskan.
+#
+# to-addresses
+# → Ganti dengan IP perangkat/server tujuan di jaringan lokal.
+#
+# to-ports
+# → Ganti dengan port layanan pada perangkat/server tujuan.
+#
+# Contoh:
+# IP Public/WAN : 203.0.113.10
+# IP Server LAN : 192.168.10.100
+# Port Layanan  : 8080
+#
+# Maka ubah menjadi:
+# dst-address=203.0.113.10
+# dst-port=8080
+# to-addresses=192.168.10.100
+# to-ports=8080
+#
+# Catatan:
+# Nilai 203.0.113.10, 192.168.10.100 dan port 8080, 80 pada contoh di bawah
+# HANYA SEBAGAI CONTOH dan kemungkinan tidak sesuai dengan
+# konfigurasi jaringan Anda.
+#
+# Author  : DevHunter Security
+# Website : devhuntersecurity.github.io
+# ============================================================
+
+/ip firewall nat
+add action=dst-nat chain=dstnat protocol=tcp dst-address=203.0.113.10 dst-port=8080 to-addresses=192.168.10.100 to-ports=80 comment="Port Forwarding"
+
+# ============================================================
+# Akhir Konfigurasi
+# ============================================================
