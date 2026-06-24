@@ -1,0 +1,71 @@
+###################################################################
+# Template VPN Remote MikroTik (SSTP, PPTP, dan L2TP Client)
+###################################################################
+# PERHATIAN:
+# Sebelum melakukan copy paste konfigurasi ini, ubah terlebih
+# dahulu bagian yang bertuliskan:
+#
+# - isi_dengan_ip_server_vpn_anda
+# - isi_dengan_username_vpn_anda
+# - isi_dengan_password_vpn_anda
+#
+# Sesuaikan dengan data VPN yang Anda miliki.
+#
+# Author  : DevHunter Security
+# Website : devhuntersecurity.github.io
+###################################################################
+
+###################################################################
+# SSTP Client
+###################################################################
+/interface sstp-client
+add connect-to="isi_dengan_ip_server/dial_vpn_anda" disabled=no name="VPN-REMOTE" user="isi_dengan_username_vpn_anda" password="isi_dengan_password_vpn_anda" comment="VPN Remote"
+
+###################################################################
+# PPTP Client
+###################################################################
+/interface pptp-client
+add connect-to="isi_dengan_ip_server/dial_vpn_anda" disabled=no name="VPN-REMOTE" user="isi_dengan_username_vpn_anda" password="isi_dengan_password_vpn_anda" comment="VPN Remote"
+
+###################################################################
+# L2TP Client
+###################################################################
+/interface l2tp-client
+add connect-to="isi_dengan_ip_server/dial_vpn_anda" disabled=no name="VPN-REMOTE" user="isi_dengan_username_vpn_anda" password="isi_dengan_password_vpn_anda" comment="VPN Remote"
+
+###################################################################
+# Proteksi DNS Resolver
+###################################################################
+# PERHATIAN:
+# Jika Anda mengubah nama interface VPN (VPN-REMOTE),
+# sesuaikan juga nilai "in-interface" pada rule di bawah.
+#
+# Fungsi:
+# Mencegah DNS Resolver MikroTik dapat diakses dari jaringan VPN
+# sehingga mengurangi risiko penyalahgunaan Open Recursive DNS.
+#
+# Port yang diblokir:
+# - 53   (DNS)
+# - 5353 (mDNS)
+# - 853  (DNS over TLS)
+###################################################################
+
+/ip firewall filter
+add action=drop chain=input comment="Block Open Recursive DNS" dst-port=53,5353,853 in-interface=VPN-REMOTE protocol=tcp
+add action=drop chain=input dst-port=53,5353,853 in-interface=VPN-REMOTE protocol=udp
+
+###################################################################
+# Informasi Tambahan
+###################################################################
+# Setelah VPN berhasil terhubung:
+#
+# Winbox:
+# Interfaces → Pilih Interface VPN → Status
+#
+# Nilai "Local Address" adalah IP yang diberikan oleh server VPN.
+# Pada sebagian layanan VPN, IP tersebut merupakan IP publik VPN
+# yang sedang digunakan oleh MikroTik.
+#
+# Pastikan rule firewall di atas berada sebelum rule ACCEPT yang
+# mengizinkan akses ke DNS RouterOS dari interface VPN.
+###################################################################
