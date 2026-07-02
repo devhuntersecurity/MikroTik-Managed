@@ -45,21 +45,11 @@ add action=redirect chain=dstnat comment="DNS 69: Force TCP" \
 # 4. NETWATCH FAILOVER (Auto Backup DNS)
 # =========================================================================================
 /tool netwatch
-add comment="IdGuard-DNS" \
-    disabled=no \
-    host=103.157.116.69 \
-    type=icmp \
-    interval=5s \
-    timeout=2s \
-    thr-loss-percent=50% \
-    down-script="\
-        /log warning \"Id-Guard DNS DOWN - Switch Secondary DNS\"; \
-        /ip dns set servers=103.112.162.211,103.112.162.222; \
-        /ip dns cache flush" \
-    up-script="\
-        /log info \"Id-Guard DNS UP - Restore Primary DNS\"; \
-        /ip dns set servers=103.157.116.69; \
-        /ip dns cache flush"
+add comment=IdGuard-DNS disabled=no down-script="/log warning \"Id-Guard DNS D\
+    OWN - Switch Secondary DNS\"; /ip dns set servers=103.112.162.211,103.112.\
+    162.222" host=103.157.116.69 http-codes="" interval=5s test-script="" \
+    thr-loss-percent=50% timeout=2s type=icmp up-script="/log info \"Id-Guard \
+    DNS UP - Restore Primary DNS\"; /ip dns set servers=103.157.116.69"
 
 # =========================================================================================
 # 5. SYSTEM SCHEDULER (Sync & Maintenance)
@@ -75,49 +65,19 @@ add interval=12h \
     start-time=00:00:00
 
 # Backup DNS Saat Sync
-add comment="Auto Set DNS (Backup saat Sync)" \
-    interval=1d \
-    name="Mode Secondary [sync. dns 69]" \
-    on-event="\
-        /log warning \"Id-Guard Sync Mode - Switch Secondary DNS\"; \
-        /ip dns set servers=103.112.162.211,103.112.162.222; \
-        /ip dns cache flush" \
-    policy=read,write,test \
-    start-date=2026-04-16 \
-    start-time=01:30:00
+add comment="Auto Set DNS (Backup saat Sync)" interval=1d name=\
+    "Mode Secondary [sync. dns 69]" on-event="/log warning \"Disable Netwatch \
+    During Sync\"; /tool netwatch disable [find comment=\"IdGuard-DNS\"]\r\
+    \n/log warning \"Id-Guard Sync Mode - Switch Secondary DNS\"; /ip dns set \
+    servers=103.112.162.211,103.112.162.222; /ip dns cache flush\r\
+    \n" policy=read,write,test start-date=2026-04-16 start-time=01:30:00
 
 # Restore DNS Utama
-add comment="Auto Set DNS (Kembali ke Utama)" \
-    interval=1d \
-    name="Mode Primary dns 69" \
-    on-event="\
-        /log info \"Id-Guard Primary DNS Restored\"; \
-        /ip dns set servers=103.157.116.69; \
-        /ip dns cache flush" \
-    policy=read,write,test \
-    start-date=2026-04-16 \
-    start-time=02:00:00
-
-# Disable Netwatch Saat Maintenance
-add comment="Auto Set Netwatch" \
-    interval=1d \
-    name="Netwatch Disable [sync. dns 69]" \
-    on-event="\
-        /log warning \"Disable Netwatch During Sync\"; \
-        /tool netwatch disable [find comment=\"IdGuard-DNS\"]" \
-    policy=read,write,test \
-    start-date=2026-04-16 \
-    start-time=01:30:00
-
-# Enable Netwatch Setelah Maintenance
-add comment="Auto Set Netwatch" \
-    interval=1d \
-    name="Netwatch Enable [sync. dns 69]" \
-    on-event="\
-        /log info \"Enable Netwatch After Sync\"; \
-        /tool netwatch enable [find comment=\"IdGuard-DNS\"]" \
-    policy=read,write,test \
-    start-date=2026-04-16 \
+add comment="Auto Set DNS (Kembali ke Utama)" interval=1d name=\
+    "Mode Primary dns 69" on-event="/log info \"Id-Guard Primary DNS Restored\
+    \"; /ip dns set servers=103.157.116.69; /ip dns cache flush\r\
+    \n/log info \"Enable Netwatch After Sync\"; /tool netwatch enable [find co\
+    mment=\"IdGuard-DNS\"]" policy=read,write,test start-date=2026-04-16 \
     start-time=02:00:00
 
 # =========================================================================================
