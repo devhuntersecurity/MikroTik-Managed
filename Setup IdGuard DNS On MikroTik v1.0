@@ -35,10 +35,10 @@ set allow-remote-requests=yes \
 # 3. REDIRECT NAT (Force Id-Guard DNS)
 # =========================================================================================
 /ip firewall nat
-add action=redirect chain=dstnat comment="DNS 69: Force UDP" \
+add action=redirect chain=dstnat comment="IDGuard DNS: Force UDP" \
     dst-port=53 protocol=udp src-address-list=LOCAL-ONLY to-ports=53
 
-add action=redirect chain=dstnat comment="DNS 69: Force TCP" \
+add action=redirect chain=dstnat comment="IDGuard DNS: Force TCP" \
     dst-port=53 protocol=tcp src-address-list=LOCAL-ONLY to-ports=53
 
 # =========================================================================================
