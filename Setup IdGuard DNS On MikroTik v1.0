@@ -51,10 +51,10 @@ add comment="IdGuard-DNS" \
     type=icmp \
     interval=5s \
     timeout=2s \
-    thr-loss-percent=15% \
+    thr-loss-percent=50% \
     down-script="\
         /log warning \"Id-Guard DNS DOWN - Switch Secondary DNS\"; \
-        /ip dns set servers=1.1.1.2,9.9.9.9; \
+        /ip dns set servers=103.112.162.211,103.112.162.222; \
         /ip dns cache flush" \
     up-script="\
         /log info \"Id-Guard DNS UP - Restore Primary DNS\"; \
@@ -80,7 +80,7 @@ add comment="Auto Set DNS (Backup saat Sync)" \
     name="Mode Secondary [sync. dns 69]" \
     on-event="\
         /log warning \"Id-Guard Sync Mode - Switch Secondary DNS\"; \
-        /ip dns set servers=1.1.1.2,9.9.9.9; \
+        /ip dns set servers=103.112.162.211,103.112.162.222; \
         /ip dns cache flush" \
     policy=read,write,test \
     start-date=2026-04-16 \
