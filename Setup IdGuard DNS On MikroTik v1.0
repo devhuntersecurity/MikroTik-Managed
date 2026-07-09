@@ -48,7 +48,7 @@ add action=redirect chain=dstnat comment="IDGuard DNS: Force TCP" \
 add comment=IdGuard-DNS disabled=no down-script="/log warning \"Id-Guard DNS D\
     OWN - Switch Secondary DNS\"; /ip dns set servers=103.112.162.211,103.112.\
     162.222" host=103.157.116.69 http-codes="" interval=5s test-script="" \
-    thr-loss-percent=50% timeout=2s type=icmp up-script="/log info \"Id-Guard \
+    thr-loss-percent=50% type=icmp up-script="/log info \"Id-Guard \
     DNS UP - Restore Primary DNS\"; /ip dns set servers=103.157.116.69"
 
 # =========================================================================================
