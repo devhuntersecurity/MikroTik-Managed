@@ -1,0 +1,41 @@
+###################################################################
+# TEMPLATE PORT FORWARDING (DST-NAT) MIKROTIK
+# Author  : DevHunter Security
+# Website : https://devhuntersecurity.github.io
+# RouterOS: v6 & v7 Compliant
+###################################################################
+
+# PERHATIAN:
+# Sebelum melakukan copy paste konfigurasi ini, ubah terlebih
+# dahulu nilai IP Address, Interface, dan Port sesuai kebutuhan jaringan Anda.
+
+# ============================================================
+# METODE 1: BERDASARKAN IP PUBLIC / STATIC IP
+# Cocok jika WAN menggunakan IP Public Statis.
+# ============================================================
+# Parameter yang wajib disesuaikan:
+# dst-address  = IP Public WAN Router Anda (Contoh: 203.0.113.10)
+# dst-port     = Port dari luar (Internet) yang ingin diakses (Contoh: 8080)
+# to-addresses = IP Server / Perangkat di jaringan LAN (Contoh: 192.168.10.100)
+# to-ports     = Port asli layanan pada Server LAN (Contoh: 80)
+
+/ip firewall nat
+add chain=dstnat action=dst-nat protocol=tcp dst-address=203.0.113.10 dst-port=8080 to-addresses=192.168.10.100 to-ports=80 comment="[DevHunter] Port Forwarding via IP Public"
+
+
+# ============================================================
+# METODE 2: BERDASARKAN INTERFACE WAN / DYNAMIC IP (REKOMENDASI)
+# Cocok jika IP WAN dinamis (PPPoE / DHCP Client / IP sering berubah).
+# ============================================================
+# Parameter yang wajib disesuaikan:
+# in-interface-list = Interface List WAN (atau ganti dengan in-interface=ether1-WAN)
+# dst-port          = Port dari luar (Internet) yang ingin diakses
+# to-addresses      = IP Server / Perangkat di jaringan LAN
+# to-ports          = Port asli layanan pada Server LAN
+
+/ip firewall nat
+add chain=dstnat action=dst-nat protocol=tcp in-interface-list=WAN-PROTECT dst-port=8080 to-addresses=192.168.10.100 to-ports=80 comment="[DevHunter] Port Forwarding via Interface WAN"
+
+# ============================================================
+# AKHIR KONFIGURASI
+# ============================================================
