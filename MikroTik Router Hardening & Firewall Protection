@@ -1,0 +1,109 @@
+###################################################################
+# MikroTik Router Hardening & Firewall Protection
+# Sysadmin : Dev'Hunter Security
+# Website  : https://devhuntersecurity.github.io
+# RouterOS : v6 & v7 Compliant
+###################################################################
+
+# PERINGATAN: Kami tidak bertanggung jawab atas kesalahan, kegagalan, kerusakan, atau router Anda yang terkunci karena faktor yang disengaja maupun tidak disengaja.
+# Script kami bekerja secara independen, bukan di bawah naungan Perusahaan MikroTik.
+# Semua masalah yang terjadi pada router Anda adalah tanggung jawab Anda sendiri dan Anda harus siap menanggung semua risikonya.
+# Jika Anda "Setuju & Paham", silakan lanjutkan.
+
+# =================================================================
+# 1. INTERFACE LIST (WAN & VPN PROTECTION)
+# =================================================================
+/interface list
+:do { add name=WAN-PROTECT } on-error={}
+
+# PENTING: Ganti "ether1" dan "vpn-out1" sesuai nama interface WAN & VPN router Anda
+:do { /interface list member add interface=ether1 list=WAN-PROTECT } on-error={}
+:do { /interface list member add interface=vpn-out1 list=WAN-PROTECT } on-error={}
+
+# =================================================================
+# 2. BOGON IP ADDRESS LIST
+# =================================================================
+/ip firewall address-list
+remove [find list=Bogon]
+add address=0.0.0.0/8 list=Bogon comment="Bogon: Current Network"
+add address=10.0.0.0/8 list=Bogon comment="Bogon: Private Class A"
+add address=100.64.0.0/10 list=Bogon comment="Bogon: Shared Address Space"
+add address=127.0.0.0/8 list=Bogon comment="Bogon: Loopback"
+add address=169.254.0.0/16 list=Bogon comment="Bogon: Link-Local"
+add address=172.16.0.0/12 list=Bogon comment="Bogon: Private Class B"
+add address=192.0.0.0/24 list=Bogon comment="Bogon: IANA IPv4 Special Purpose"
+add address=192.0.2.0/24 list=Bogon comment="Bogon: TEST-NET-1"
+add address=192.88.99.0/24 list=Bogon comment="Bogon: 6to4 Relay Anycast"
+add address=192.168.0.0/16 list=Bogon comment="Bogon: Private Class C"
+add address=198.18.0.0/15 list=Bogon comment="Bogon: Benchmarking"
+add address=198.51.100.0/24 list=Bogon comment="Bogon: TEST-NET-2"
+add address=203.0.113.0/24 list=Bogon comment="Bogon: TEST-NET-3"
+add address=224.0.0.0/4 list=Bogon comment="Bogon: Multicast"
+add address=240.0.0.0/4 list=Bogon comment="Bogon: Reserved for Future Use"
+
+# =================================================================
+# 3. SERVICE HARDENING (Pindah Port Winbox ke 8292)
+# =================================================================
+/ip service
+set ftp disabled=yes
+set ssh disabled=yes
+set telnet disabled=yes
+set www disabled=yes
+set api disabled=yes
+set api-ssl disabled=yes
+set winbox port=8292
+
+# =================================================================
+# 4. FIREWALL FILTER PROTECTION (Chain Input)
+# =================================================================
+/ip firewall filter
+
+# Block Default Ports & Winbox Scan
+add action=drop chain=input comment="Block Winbox Scan & Default Ports" dst-port=21,22,23,8291,80,443,8728,8729 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=21,22,23,8291,80,443,8728,8729 in-interface-list=WAN-PROTECT protocol=udp
+
+# Block Service Discovery & Management Protocols
+add action=drop chain=input comment="Block Neighbor Discovery" dst-port=5678 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=5678 in-interface-list=WAN-PROTECT protocol=udp
+
+add action=drop chain=input comment="Block MAC Address Connection" dst-port=20561 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=20561 in-interface-list=WAN-PROTECT protocol=udp
+
+add action=drop chain=input comment="Block Traceroute" dst-port=33434-33534 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=33434-33534 in-interface-list=WAN-PROTECT protocol=udp
+
+# Block Vulnerable Services (DNS, Proxy, SNMP, BTest, UPnP)
+add action=drop chain=input comment="Block Open Recursive DNS" dst-port=53,5353,853 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=53,5353,853 in-interface-list=WAN-PROTECT protocol=udp
+
+add action=drop chain=input comment="Block Open PROXY" dst-port=3128,8080 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=3128,8080 in-interface-list=WAN-PROTECT protocol=udp
+
+add action=drop chain=input comment="Block SOCKS Proxy" dst-port=1080 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=1080 in-interface-list=WAN-PROTECT protocol=udp
+
+add action=drop chain=input comment="Block BTest Server" dst-port=2000 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=2000 in-interface-list=WAN-PROTECT protocol=udp
+
+add action=drop chain=input comment="Block SNMP" dst-port=161,162 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=161,162 in-interface-list=WAN-PROTECT protocol=udp
+
+add action=drop chain=input comment="Block The Dude Server" dst-port=2210,2211 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=2210,2211 in-interface-list=WAN-PROTECT protocol=udp
+
+add action=drop chain=input comment="Block SSDP & UPnP" dst-port=1900 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input dst-port=1900 in-interface-list=WAN-PROTECT protocol=udp
+
+# Ping & Bogon Filtering
+add action=drop chain=input comment="Drop Ping from WAN" icmp-options=8:0 in-interface-list=WAN-PROTECT protocol=icmp
+add action=drop chain=input comment="Drop Bogon IP Source" in-interface-list=WAN-PROTECT src-address-list=Bogon
+
+# VPN Flood Protection (Pastikan Interface WAN/VPN sesuai)
+add action=drop chain=input comment="DROP FLOOD VPN L2TP" dst-port=4500,1701,500 in-interface-list=WAN-PROTECT protocol=udp
+add action=drop chain=input comment="DROP FLOOD VPN PPTP (GRE)" in-interface-list=WAN-PROTECT protocol=gre
+add action=drop chain=input comment="DROP FLOOD VPN PPTP (TCP)" dst-port=1723 in-interface-list=WAN-PROTECT protocol=tcp
+add action=drop chain=input comment="DROP FLOOD VPN IKEV/IPSEC" in-interface-list=WAN-PROTECT protocol=ipsec-esp
+
+# =================================================================
+# END CONFIG
+# =================================================================
