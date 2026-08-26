@@ -1,0 +1,30 @@
+###############################################################################
+# HARDENED RAW FIREWALL - ICMP PROTECTION (GAME ONLINE & HIGH TRAFFIC SAFE)
+# Author    : Sysadmin Dev'Hunter Security
+# Target    : RouterOS v7.x (Prerouting / Pre-Connection Tracking)
+# Features  : Game-Safe ICMP Rate Limit, Path MTU Preserved, CPU Load Saver
+###############################################################################
+
+/ip firewall raw
+
+# 1. Main Jump Rule
+add action=jump chain=prerouting comment="[DevHunter] Jump to ICMP Chain" jump-target=icmp4 protocol=icmp
+
+# 2. ICMP Echo Reply (Type 0:0) - Per-Source Rate Limit
+add action=accept chain=icmp4 comment="[DevHunter] Allow Limited Echo Reply" dst-limit=20,50,src-address/1m40s icmp-options=0:0 protocol=icmp
+
+# 3. Path MTU Discovery & Network Control Signals (Type 3) - MUST ALWAYS ALLOW FOR GAME UDP/TCP
+add action=accept chain=icmp4 comment="[DevHunter] Allow Net Unreachable" icmp-options=3:0 protocol=icmp
+add action=accept chain=icmp4 comment="[DevHunter] Allow Host Unreachable" icmp-options=3:1 protocol=icmp
+add action=accept chain=icmp4 comment="[DevHunter] Allow Protocol Unreachable" icmp-options=3:2 protocol=icmp
+add action=accept chain=icmp4 comment="[DevHunter] Allow Port Unreachable" icmp-options=3:3 protocol=icmp
+add action=accept chain=icmp4 comment="[DevHunter] Allow Fragmentation Needed (PMTU)" icmp-options=3:4 protocol=icmp
+
+# 4. ICMP Echo Request / Ping (Type 8:0) - Relaxed Rate Limit (Safe for Game Matchmaking & Ping Test)
+add action=accept chain=icmp4 comment="[DevHunter] Allow Safe Echo Request (Game Optimized)" dst-limit=20,50,dst-address/1m40s icmp-options=8:0 protocol=icmp
+
+# 5. ICMP Time Exceeded / Tracert (Type 11:0-255)
+add action=accept chain=icmp4 comment="[DevHunter] Allow Time Exceeded (Tracert)" icmp-options=11:0-255 protocol=icmp
+
+# 6. Drop Malformed & Unhandled ICMP Abuse
+add action=drop chain=icmp4 comment="[DevHunter] Drop Unhandled ICMP Types" protocol=icmp
