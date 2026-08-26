@@ -1,0 +1,95 @@
+###################################################################
+# AUTOMATED BANDWIDTH RATE FAILOVER & FAILBACK (WITH ANTI-FLAPPING)
+# Author  : Sysadmin Dev'Hunter Security
+# Target  : RouterOS v7.20.x ONLY
+# Features: RX Traffic Monitoring, Auto Switch & Anti-Flapping Counter
+###################################################################
+
+# =================================================================
+# 1. PREPARATION / ROUTING TABLE SETUP
+# Eksekusi bagian ini sekali saja via Terminal MikroTik
+# =================================================================
+/routing table
+:do { add disabled=no fib name=BACKUP } on-error={}
+
+/routing rule
+remove [find comment="backup"]
+add action=lookup comment="backup" disabled=yes src-address=10.0.0.0/8 table=BACKUP
+add action=lookup comment="backup" disabled=yes src-address=172.16.0.0/12 table=BACKUP
+add action=lookup comment="backup" disabled=yes src-address=192.168.0.0/16 table=BACKUP
+
+/ip route
+# SESUAIKAN: Ganti 192.168.2.1 dengan IP Gateway ISP Backup Anda
+add comment="ISP BACKUP" disabled=no dst-address=0.0.0.0/0 gateway=192.168.2.1 routing-table=BACKUP suppress-hw-offload=no
+
+
+# =================================================================
+# 2. MONITORING SCRIPT (WITH ANTI-FLAPPING HYSTERESIS)
+# Pasang script ini di System > Scheduler (Jalankan tiap 5 atau 10 detik)
+# =================================================================
+
+# --- KONFIGURASI PARAMETER ---
+:local threshold 75000000;        # Batas minimal bandwidth RX (75 Mbps dalam bps)
+:local ifaceName "ether1-WAN1";   # Nama interface WAN Utama
+:local failThreshold 3;          # Jumlah cek berturut-turut untuk Failover (3x cek low = Failover)
+:local recoveryThreshold 5;      # Jumlah cek berturut-turut untuk Restore/Failback (5x cek normal = Restore)
+
+# --- GLOBAL VARIABLES FOR COUNTERS ---
+:global failoverCounter;
+:global recoveryCounter;
+
+:if ([:typeof $failoverCounter] = "nothing") do={ :set failoverCounter 0 }
+:if ([:typeof $recoveryCounter] = "nothing") do={ :set recoveryCounter 0 }
+
+# --- VALIDASI INTERFACE ---
+:local ifaceId [/interface find where name=$ifaceName]
+:if ($ifaceId = "") do={
+    :log error ("[DevHunter-Failover] Interface '" . $ifaceName . "' tidak ditemukan!")
+    :return
+}
+
+# --- TRAFFIC MONITORING & LOGIC ---
+/interface monitor-traffic $ifaceId once do={
+    :local rx $"rx-bits-per-second"
+    :local backupRules [/routing rule find where comment="backup"]
+    
+    :if ([:len $backupRules] > 0) do={
+        :local isBackupActive ([/routing rule get [:pick $backupRules 0] disabled] = false)
+        
+        # KONDISI A: TRAFIK LOW (< THRESHOLD)
+        :if ($rx < $threshold) do={
+            :set recoveryCounter 0; # Reset recovery counter
+            
+            :if (!$isBackupActive) do={
+                :set failoverCounter ($failoverCounter + 1);
+                :log info ("[DevHunter-Failover] Low traffic detected (" . ($rx / 1000000) . " Mbps). Failover counter: " . $failoverCounter . "/" . $failThreshold);
+                
+                # Eksekusi Failover jika counter memenuhi ambang batas
+                :if ($failoverCounter >= $failThreshold) do={
+                    /routing rule enable $backupRules
+                    :log warning ("[DevHunter-Failover] CRITICAL: Traffic low persistent! Switching to ISP BACKUP executed.");
+                    :set failoverCounter 0;
+                }
+            }
+        } 
+        
+        # KONDISI B: TRAFIK NORMAL / HIGH (>= THRESHOLD)
+        :else={
+            :set failoverCounter 0; # Reset failover counter
+            
+            :if ($isBackupActive) do={
+                :set recoveryCounter ($recoveryCounter + 1);
+                :log info ("[DevHunter-Failover] Normal traffic detected (" . ($rx / 1000000) . " Mbps). Recovery counter: " . $recoveryCounter . "/" . $recoveryThreshold);
+                
+                # Eksekusi Restore/Failback jika counter stabil secara berkelanjutan
+                :if ($recoveryCounter >= $recoveryThreshold) do={
+                    /routing rule disable $backupRules
+                    :log info ("[DevHunter-Failover] RECOVERY: Main ISP stable! Restored to MAIN ISP.");
+                    :set recoveryCounter 0;
+                }
+            }
+        }
+    } :else={
+        :log error ("[DevHunter-Failover] Routing rule comment='backup' tidak ditemukan!")
+    }
+}
