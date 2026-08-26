@@ -1,86 +1,69 @@
-# 🔄 MikroTik Auto Backup to Gmail (Full Sensitive Included)
-**RouterOS v7 Compliant (Tested on ROS v7.21.5)**  
-*Developed by Dev'Hunter Security*
-
-Skrip otomatisasi untuk melakukan backup seluruh konfigurasi MikroTik RouterOS ke email Gmail dalam format `.rsc` secara berkala. Skrip ini sudah disesuaikan untuk RouterOS v7 dengan mengekspor seluruh data sensitif (termasuk *password*, *PPPoE secret*, *IPSec keys*, dan *User credentials*).
-
----
-
-## 📋 Persyaratan & Persiapan Gmail
-
-Sebelum memasang skrip di MikroTik, Anda wajib menyiapkan akses **App Password** Gmail:
-
-1. **Aktifkan Verifikasi 2 Langkah** pada akun Google Anda melalui:  
-   `https://myaccount.google.com/security`
-2. **Buat Kata Sandi Aplikasi (App Password):**  
-   Buka `https://myaccount.google.com/apppasswords`, buat App Password baru (misal dengan nama `MikroTik Backup`).
-3. Simpan 16 karakter password yang diberikan oleh Google. Password ini yang akan digunakan pada konfigurasi SMTP MikroTik (BUKAN password login akun Gmail Anda).
-
----
-
-## 🚀 Skrip Auto Backup MikroTik (RouterOS v7)
-
-Salin kode di bawah ini, sesuaikan variabel parameter, lalu *paste* di **Terminal MikroTik**:
-
-```routeros
 ###################################################################
-# Backup Otomatis MikroTik ke Gmail (Includes Sensitive Passwords)
-# Author  : Dev'Hunter Security
-# Website : [https://devhuntersecurity.github.io](https://devhuntersecurity.github.io)
+# Auto Backup MikroTik ke Gmail (Lengkap + Password)
+# Sysadmin : Dev'Hunter Security
+# Website  : https://devhuntersecurity.github.io
+# RouterOS : v7 Compliant (v7.21.5+)
 ###################################################################
 
-# 1. Konfigurasi SMTP Gmail
+# =================================================================
+# 1. EDIT 3 BARIS DI BAWAH INI SESUAI DATA ANDA
+# =================================================================
+:local myEmail "emailanda@gmail.com"
+:local myPassword "app_password_gmail_16_digit"
+:local mySenderName "NamaRouter"
+
+
+# =================================================================
+# 2. SISTEM OTOMATIS BACKUP (JANGAN DIUBAH)
+# =================================================================
 /tool e-mail
 set server="smtp.gmail.com" \
     port=587 \
     tls=starttls \
-    user="emailanda@gmail.com" \
-    password="app_password_gmail_16_digit" \
-    from="NamaRouter <emailanda@gmail.com>"
+    user=$myEmail \
+    password=$myPassword \
+    from=($mySenderName . " <" . $myEmail . ">")
 
-# 2. Hapus Scheduler Lama (Jika Ada)
 /system scheduler
 remove [find name=BACKUP-TO-EMAIL]
 
-# 3. Buat Scheduler Backup Otomatis
 /system scheduler
 add name=BACKUP-TO-EMAIL \
     interval=1d \
     start-time=startup \
     policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
-    comment="Backup Otomatis ke Gmail (Full Sensitive Passwords)" \
+    comment="Backup Otomatis ke Gmail (Lengkap + Password)" \
     on-event="#=========================================================
-# Auto Backup MikroTik ke Gmail (With Passwords & Sensitive Data)
+# Auto Backup Engine - Dev'Hunter Security
 #=========================================================
 :global date [/system clock get date]
 :global d [:pick \$date 4 6]
 :global m [:pick \$date 0 3]
 :global y [:pick \$date 7 11]
 
-:log warning \"-> Memulai Backup Router (Termasuk Passwords & Secrets)\"
+:log warning \"-> Memulai Backup Router...\"
 
 :global backupfilersc ([/system identity get name] . \"-\" . \$m . \"-\" . \$d . \"-\" . \$y)
 
-# Menggunakan show-sensitive agar password & secret ikut ter-export
 /export show-sensitive file=\$backupfilersc
 
 :delay 20s
 
-:log warning \"-> Mengirim Backup ke Gmail\"
+:log warning \"-> Mengirim File Backup ke Gmail...\"
 
 /tool e-mail send \
-to=\"emailanda@gmail.com\" \
-subject=([/system identity get name] . \" - Backup Konfigurasi (Sensitive Included)\") \
-from=\"NamaRouter <emailanda@gmail.com>\" \
+to=[/tool e-mail get user] \
+subject=([/system identity get name] . \" - Backup Konfigurasi Router\") \
+from=[/tool e-mail get from] \
 file=(\$backupfilersc . \".rsc\")
 
 :delay 20s
 
-:log warning \"-> Menghapus File Backup Lokal\"
+:log warning \"-> Menghapus File Temp di Router...\"
 
 /file remove (\$backupfilersc . \".rsc\")
 
 :delay 5s
 
-:log warning \"-> Backup Berhasil Dikirim ke Gmail\"
+:log warning \"-> SUKSES: Backup Berhasil Dikirim ke Email!\"
 "
