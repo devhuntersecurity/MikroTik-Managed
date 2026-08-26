@@ -1,0 +1,94 @@
+# =========================================================================================
+# Id-Guard DNS Client Config (RouterOS v6 Compliant)
+# Sysadmin : Dev'Hunter Security
+# Website  : https://devhuntersecurity.github.io
+# Feature  : Auto Redirect, Netwatch Failover, Sync Maintenance & Anti-Open Resolver
+# =========================================================================================
+
+# -----------------------------------------------------------------------------------------
+# 1. IP ADDRESS LIST (Local Private IP RFC1918)
+# -----------------------------------------------------------------------------------------
+/ip firewall address-list
+add address=10.0.0.0/8 list=LOCAL-ONLY comment="RFC1918"
+add address=172.16.0.0/12 list=LOCAL-ONLY comment="RFC1918"
+add address=192.168.0.0/16 list=LOCAL-ONLY comment="RFC1918"
+
+# -----------------------------------------------------------------------------------------
+# 2. DNS SETTINGS (RouterOS v6 Syntax)
+# Catatan: Jika RAM Router < 1GB, ubah cache-size=65536KiB menjadi 8192KiB atau 16384KiB
+# -----------------------------------------------------------------------------------------
+/ip dns
+set allow-remote-requests=yes \
+    cache-max-ttl=1d \
+    cache-size=65536KiB \
+    query-server-timeout=2s \
+    query-total-timeout=10s \
+    servers=103.157.116.69
+
+# -----------------------------------------------------------------------------------------
+# 3. REDIRECT NAT (Force Id-Guard DNS)
+# -----------------------------------------------------------------------------------------
+/ip firewall nat
+add action=redirect chain=dstnat comment="IDGuard DNS: Force UDP" \
+    dst-port=53 protocol=udp src-address-list=LOCAL-ONLY to-ports=53
+
+add action=redirect chain=dstnat comment="IDGuard DNS: Force TCP" \
+    dst-port=53 protocol=tcp src-address-list=LOCAL-ONLY to-ports=53
+
+# -----------------------------------------------------------------------------------------
+# 4. NETWATCH FAILOVER (Format v6)
+# -----------------------------------------------------------------------------------------
+/tool netwatch
+remove [find comment=IdGuard-DNS]
+add comment=IdGuard-DNS \
+    host=103.157.116.69 interval=10s \
+    down-script="/log warning \"Id-Guard DNS DOWN - Switch Secondary DNS\"; /ip dns set servers=103.112.162.211,103.112.162.222" \
+    up-script="/log info \"Id-Guard DNS UP - Restore Primary DNS\"; /ip dns set servers=103.157.116.69"
+
+# -----------------------------------------------------------------------------------------
+# 5. SYSTEM SCHEDULER (Sync & Maintenance)
+# -----------------------------------------------------------------------------------------
+/system scheduler
+remove [find name="Mode Secondary [sync. IDGuard DNS]"]
+remove [find name="Mode Primary IDGuard DNS"]
+
+# Backup DNS Saat Sync Engine Server (01:30 AM)
+add comment="Auto Set DNS (Backup saat Sync)" interval=1d name="Mode Secondary [sync. IDGuard DNS]" \
+    policy=read,write,test start-time=01:30:00 on-event="\
+    /log warning \"Disable Netwatch During Sync\";\
+    /tool netwatch disable [find comment=\"IdGuard-DNS\"];\
+    /log warning \"Id-Guard Sync Mode - Switch Secondary DNS\";\
+    /ip dns set servers=103.112.162.211,103.112.162.222;\
+    /ip dns cache flush;\
+    "
+
+# Restore DNS Utama Setelah Sync (02:00 AM)
+add comment="Auto Set DNS (Kembali ke Utama)" interval=1d name="Mode Primary IDGuard DNS" \
+    policy=read,write,test start-time=02:00:00 on-event="\
+    /log info \"Id-Guard Primary DNS Restored\";\
+    /ip dns set servers=103.157.116.69;\
+    /ip dns cache flush;\
+    /log info \"Enable Netwatch After Sync\";\
+    /tool netwatch enable [find comment=\"IdGuard-DNS\"];\
+    "
+
+# -----------------------------------------------------------------------------------------
+# 6. FIREWALL FILTER (Anti Open Resolver dari Interface WAN / VPN)
+# -----------------------------------------------------------------------------------------
+/interface list
+:do { add name=WAN-PROTECT } on-error={}
+
+# Ganti "ether1" dan "vpn-out1" sesuai dengan nama interface WAN/VPN di router Anda
+:do { /interface list member add interface=ether1 list=WAN-PROTECT } on-error={}
+:do { /interface list member add interface=vpn-out1 list=WAN-PROTECT } on-error={}
+
+/ip firewall filter
+add action=drop chain=input comment="Block Open Recursive DNS TCP" \
+    connection-state=new dst-port=53,5353,853 in-interface-list=WAN-PROTECT protocol=tcp
+
+add action=drop chain=input comment="Block Open Recursive DNS UDP" \
+    connection-state=new dst-port=53,5353,853 in-interface-list=WAN-PROTECT protocol=udp
+
+# =========================================================================================
+# END CONFIG
+# =========================================================================================
