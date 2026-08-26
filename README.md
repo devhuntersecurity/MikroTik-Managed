@@ -1,7 +1,7 @@
 # 🛡️ MikroTik-Managed (Network Automation & Provisioning)
 
 [![Latest Version](https://img.shields.io/github/v/release/devhuntersecurity/MikroTik-Managed)](https://github.com/devhuntersecurity/MikroTik-Managed/releases)
-[![Maintenance Status](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/devhunter-git/MikroTik-Managed/)
+[![Maintenance Status](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/devhuntersecurity/MikroTik-Managed/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![GitHub Issues](https://img.shields.io/github/issues/devhuntersecurity/MikroTik-Managed)](https://github.com/devhuntersecurity/MikroTik-Managed/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/devhuntersecurity/MikroTik-Managed?style=social)](https://github.com/devhuntersecurity/MikroTik-Managed/stargazers)
@@ -18,22 +18,27 @@
 
 ## 🚀 Key Modules & Capabilities
 
-* **⚡ Automated Provisioning**: Standarisasi konfigurasi interface, IP management, dan DNS tuning secara instan.
-* **🛡️ Security Hardening**: Proteksi Bruteforce, firewall filter layer 7, dan pengetatan akses service router.
+* **⚡ Automated Provisioning**: Standarisasi konfigurasi interface, IP management, BGP routing, dan DNS tuning.
+* **🛡️ Security Hardening**: Proteksi Bruteforce, firewall filter layer 7, threat intelligence feed, dan pengetatan service.
 * **📡 Disaster Recovery (DR)**: Backup otomatis berjadwal yang dikirimkan melalui **SFTP** atau **Email SMTP**.
-* **🤖 Intelligent Monitoring**: Integrasi notifikasi event kritis (CPU Load, Link Down) via **Telegram Bot API**.
-* **📶 Traffic Engineering**: Optimasi Queue dinamis untuk manajemen bandwidth yang presisi.
+* **🤖 Intelligent Monitoring**: Notifikasi event kritis (CPU Load, Link Down, Failover) via **Telegram Bot API**.
+* **📶 Traffic Engineering**: Optimasi Queue dinamis dan PBR (Policy-Based Routing) untuk efisiensi bandwidth.
 
 ---
 
 ## 🛠️ Implementasi & Penggunaan
 
-1.  **Upload**: Unggah file `.rsc` ke menu **Files** di Winbox.
-2.  **Import**: Jalankan perintah di Terminal MikroTik:
-    ```routeros
-    /import file-name=nama_skrip.rsc
-    ```
-3.  **Variables**: Sesuaikan `tgBotToken`, `tgChatId`, atau `identity` di dalam skrip sebelum dieksekusi.
+> ⚠️ **PENTING**: Repositori ini berisi berbagai modul skrip multi-bahasa (`.rsc`, `.py`, `.yml`, `.sh`). **Jangan pernah mengimpor atau mengeksekusi skrip secara mentah (*blind deployment*).**
+
+Sebelum melakukan eksekusi, pastikan Anda mengikuti langkah-langkah berikut:
+
+1. **Cermati & Pahami**: Buka file skrip yang ingin digunakan. Baca alur logika, sintaks, serta alokasi resource di dalamnya untuk memastikan kesesuaian dengan topologi jaringan Anda.
+2. **Sesuaikan Variabel**: Edit parameter sensitif dan variabel lokal (seperti nama `Interface`, `IP Address`, `Subnet`, `tgBotToken`, `tgChatId`, atau `Credentials`) di dalam file skrip atau `.env`.
+3. **Uji Coba di Lab**: Selalu tes dan validasi skrip pada lingkungan simulasi (GNS3, EVE-NG, atau CHR Lab) sebelum melakukan deployment ke router/server produksi.
+4. **Eksekusi Sesuai Format**:
+   * **RouterOS Script (`.rsc`)**: Tinjau ulang kode, unggah via Winbox/Terminal, lalu jalankan `/import file-name=nama_skrip.rsc`.
+   * **Python (`.py`) / Bash (`.sh`)**: Jalankan di lingkungan lokal/server otomasi setelah mengatur konfigurasi atau variabel environment.
+   * **Ansible Playbook (`.yml`)**: Sesuaikan file `inventory` serta variabel playbook, lalu eksekusi `ansible-playbook`.
 
 ---
 
@@ -50,7 +55,7 @@ Jika Anda merasa terbantu dengan skrip ini, pertimbangkan untuk memberikan dukun
 
 ---
 
-### Stay Secure & High Performance | Ahmad Abdul Machrus (DevHunter1337)
+### Stay Secure & High Performance | Ahmad Abdul Machrus (Dev'Hunter Security)
 
 ![Alt](https://repobeats.axiom.co/api/embed/be859a401d2eb19c9c588f0dc999c9b64194b995.svg "Repobeats analytics image")
 
