@@ -1,0 +1,56 @@
+###############################################################################
+# RAW FIREWALL - SYN FLOOD PROTECTION & MITIGATION
+# Author     : Sysadmin Dev'Hunter Security
+# RouterOS   : v7.x
+# Target     : Input & Forward (Pre-Connection Tracking Optimization)
+###############################################################################
+
+# =============================================================================
+# 1. DROP INVALID CONNECTIONS (FILTER TABLE)
+# =============================================================================
+/ip firewall filter
+add chain=input connection-state=invalid action=drop comment="[DevHunter] Drop INVALID Input"
+add chain=forward connection-state=invalid action=drop comment="[DevHunter] Drop INVALID Forward"
+
+
+# =============================================================================
+# 2. RAW SYN FLOOD PROTECTION (PILIH SALAH SATU PROFIL SESUAI KAPASITAS)
+# =============================================================================
+/ip firewall raw
+
+# -----------------------------------------------------------------------------
+# PROFILE A (HOME / SOHO) | (<=20 User, Bandwidth <=50 Mbps)
+# -----------------------------------------------------------------------------
+# add chain=prerouting protocol=tcp tcp-flags=syn limit=50,20:packet action=accept comment="[DevHunter] Allow SYN Rate - Home"
+# add chain=prerouting protocol=tcp tcp-flags=syn action=drop comment="[DevHunter] Drop SYN Flood - Home"
+
+# -----------------------------------------------------------------------------
+# PROFILE B (OFFICE / SMALL HOTSPOT) | (20-100 User, Bandwidth 50-200 Mbps)
+# -----------------------------------------------------------------------------
+# add chain=prerouting protocol=tcp tcp-flags=syn limit=150,50:packet action=accept comment="[DevHunter] Allow SYN Rate - Office"
+# add chain=prerouting protocol=tcp tcp-flags=syn action=drop comment="[DevHunter] Drop SYN Flood - Office"
+
+# -----------------------------------------------------------------------------
+# PROFILE C (BIG HOTSPOT / RT RW NET) | (100-500 User, Bandwidth 200-500 Mbps)
+# -----------------------------------------------------------------------------
+# add chain=prerouting protocol=tcp tcp-flags=syn limit=300,100:packet action=accept comment="[DevHunter] Allow SYN Rate - Big Hotspot"
+# add chain=prerouting protocol=tcp tcp-flags=syn action=drop comment="[DevHunter] Drop SYN Flood - Big Hotspot"
+
+# -----------------------------------------------------------------------------
+# PROFILE D (SERVER / ISP SCALE) | (>500 User, Server Exposed, Bandwidth >500 Mbps)
+# -----------------------------------------------------------------------------
+# add chain=prerouting protocol=tcp tcp-flags=syn limit=1000,200:packet action=accept comment="[DevHunter] Allow SYN Rate - ISP"
+# add chain=prerouting protocol=tcp tcp-flags=syn action=drop comment="[DevHunter] Drop SYN Flood - ISP"
+
+
+# =============================================================================
+# ALTERNATIF TERBAIK: DYNAMIC SYN FLOOD BLACKLIST (DST-LIMIT PER IP)
+# Mencegah False Positive pada User Lain Saat Terjadi Serangan
+# =============================================================================
+
+# 1. Drop otomatis IP yang masuk ke Address-List SYN-Blacklist
+add chain=prerouting src-address-list=SYN-Blacklist action=drop comment="[DevHunter] Drop SYN Flood Attacker"
+
+# 2. Deteksi rate SYN berlebih per IP asal dan masukkan ke Address-List selama 30 menit
+add chain=prerouting protocol=tcp tcp-flags=syn dst-limit=30,5,src-and-dst-addresses/10s action=accept comment="[DevHunter] Allow Normal SYN Rate"
+add chain=prerouting protocol=tcp tcp-flags=syn action=add-src-to-address-list address-list=SYN-Blacklist address-list-timeout=30m comment="[DevHunter] Detect & Blacklist SYN Attacker"
