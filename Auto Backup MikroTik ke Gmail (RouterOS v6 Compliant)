@@ -1,0 +1,69 @@
+###################################################################
+# Auto Backup MikroTik ke Gmail (RouterOS v6 Compliant)
+# Sysadmin : Dev'Hunter Security
+# Website  : https://devhuntersecurity.github.io
+###################################################################
+
+# =================================================================
+# 1. EDIT 3 BARIS DI BAWAH INI SESUAI DATA ANDA
+# =================================================================
+:local myEmail "emailanda@gmail.com"
+:local myPassword "app_password_gmail_16_digit"
+:local mySenderName "NamaRouter"
+
+
+# =================================================================
+# 2. SISTEM OTOMATIS BACKUP (ROUTEROS V6)
+# =================================================================
+/tool e-mail
+set server="smtp.gmail.com" \
+    port=587 \
+    start-tls=yes \
+    user=$myEmail \
+    password=$myPassword \
+    from=($mySenderName . " <" . $myEmail . ">")
+
+/system scheduler
+remove [find name=BACKUP-TO-EMAIL]
+
+/system scheduler
+add name=BACKUP-TO-EMAIL \
+    interval=1d \
+    start-time=startup \
+    policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+    comment="Backup Otomatis ke Gmail (RouterOS v6)" \
+    on-event="#=========================================================
+# Auto Backup Engine ROS v6
+#=========================================================
+:global date [/system clock get date]
+:global d [:pick \$date 4 6]
+:global m [:pick \$date 0 3]
+:global y [:pick \$date 7 11]
+
+:log warning \"-> Memulai Backup Router...\"
+
+:global backupfilersc ([/system identity get name] . \"-\" . \$m . \"-\" . \$d . \"-\" . \$y)
+
+# Ekspor Konfigurasi Lengkap (ROS v6 otomatis menyertakan password)
+/export file=\$backupfilersc
+
+:delay 20s
+
+:log warning \"-> Mengirim File Backup ke Gmail...\"
+
+/tool e-mail send \
+to=[/tool e-mail get user] \
+subject=([/system identity get name] . \" - Backup Konfigurasi Router\") \
+from=[/tool e-mail get from] \
+file=(\$backupfilersc . \".rsc\")
+
+:delay 20s
+
+:log warning \"-> Menghapus File Temp di Router...\"
+
+/file remove (\$backupfilersc . \".rsc\")
+
+:delay 5s
+
+:log warning \"-> SUKSES: Backup Berhasil Dikirim ke Email!\"
+"
