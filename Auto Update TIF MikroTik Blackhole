@@ -1,6 +1,6 @@
 # =====================================================================
 # SCRIPT NAME : Auto Update TIF MikroTik Blackhole
-# SOURCE      : devhuntersecurity/dns-blocklist
+# SOURCE      : https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc
 # 
 # FOKUS & TUJUAN:
 # Menggunakan HaGeZi TIF (Threat Intelligence Feeds) yang murni 
