@@ -1,0 +1,47 @@
+# =====================================================================
+# SCRIPT NAME : Auto Update TIF MikroTik Blackhole
+# SOURCE      : https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc
+# 
+# FOKUS & TUJUAN:
+# Menggunakan HaGeZi TIF (Threat Intelligence Feeds) yang murni 
+# difokuskan untuk keamanan siber (Cyber Security), yaitu memblokir 
+# server berbahaya seperti malware, ransomware, phishing, penipuan (scam), 
+# botnet, dan situs peretas.
+# 
+# CARA KERJA:
+# Skrip otomatis ini akan berjalan di router MikroTik sebanyak 3 kali 
+# sehari (pagi, sore, malam) untuk mengunduh daftar IP berbahaya terbaru 
+# dari internet dan langsung menerapkannya sebagai rute pemblokiran 
+# (blackhole) agar jaringan Anda aman secara otomatis.
+# =====================================================================
+
+/system scheduler
+add interval=1d name="Update TIF 1" on-event=":local url \"https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc\"; \
+:local file \"tif.rsc\"; \
+:if ([:len [/file find name=\$file]] > 0) do={ /file remove \$file }; \
+/tool fetch url=\$url dst-path=\$file mode=https keep-result=yes; \
+:delay 3; \
+/import file-name=\$file; \
+:log info \"TIF address-list updated\";" \
+policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+start-date=2026-08-30 start-time=06:30:00
+
+add interval=1d name="Update TIF 2" on-event=":local url \"https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc\"; \
+:local file \"tif.rsc\"; \
+:if ([:len [/file find name=\$file]] > 0) do={ /file remove \$file }; \
+/tool fetch url=\$url dst-path=\$file mode=https keep-result=yes; \
+:delay 3; \
+/import file-name=\$file; \
+:log info \"TIF address-list updated\";" \
+policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+start-date=2026-08-30 start-time=16:30:00
+
+add interval=1d name="Update TIF 3" on-event=":local url \"https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc\"; \
+:local file \"tif.rsc\"; \
+:if ([:len [/file find name=\$file]] > 0) do={ /file remove \$file }; \
+/tool fetch url=\$url dst-path=\$file mode=https keep-result=yes; \
+:delay 3; \
+/import file-name=\$file; \
+:log info \"TIF address-list updated\";" \
+policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+start-date=2026-08-30 start-time=22:30:00
