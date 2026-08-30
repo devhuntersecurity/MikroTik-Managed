@@ -16,32 +16,44 @@
 # =====================================================================
 
 /system scheduler
-add interval=1d name="Update TIF 1" on-event=":local url \"https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc\"; \
-:local file \"tif.rsc\"; \
-:if ([:len [/file find name=\$file]] > 0) do={ /file remove \$file }; \
-/tool fetch url=\$url dst-path=\$file mode=https keep-result=yes verbose=yes; \
-:delay 3; \
-/import file-name=\$file; \
-:log info \"TIF address-list updated\";" \
+add interval=1d name="Update TIF 1" on-event="{\
+\n  :local url \"https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc\";\
+\n  :local file \"tif.rsc\";\
+\n  :if ([:len [/file find where name=\$file]] > 0) do={\
+\n    /file remove [find where name=\$file];\
+\n  };\
+\n  /tool fetch url=\$url dst-path=\$file mode=https keep-result=yes;\
+\n  :delay 5s;\
+\n  /import file-name=\$file;\
+\n  :log info \"TIF address-list updated\";\
+\n}" \
 policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
 start-date=2026-08-30 start-time=06:30:00
 
-add interval=1d name="Update TIF 2" on-event=":local url \"https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc\"; \
-:local file \"tif.rsc\"; \
-:if ([:len [/file find name=\$file]] > 0) do={ /file remove \$file }; \
-/tool fetch url=\$url dst-path=\$file mode=https keep-result=yes verbose=yes; \
-:delay 3; \
-/import file-name=\$file; \
-:log info \"TIF address-list updated\";" \
+add interval=1d name="Update TIF 2" on-event="{\
+\n  :local url \"https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc\";\
+\n  :local file \"tif.rsc\";\
+\n  :if ([:len [/file find where name=\$file]] > 0) do={\
+\n    /file remove [find where name=\$file];\
+\n  };\
+\n  /tool fetch url=\$url dst-path=\$file mode=https keep-result=yes;\
+\n  :delay 5s;\
+\n  /import file-name=\$file;\
+\n  :log info \"TIF address-list updated\";\
+\n}" \
 policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
 start-date=2026-08-30 start-time=16:30:00
 
-add interval=1d name="Update TIF 3" on-event=":local url \"https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc\"; \
-:local file \"tif.rsc\"; \
-:if ([:len [/file find name=\$file]] > 0) do={ /file remove \$file }; \
-/tool fetch url=\$url dst-path=\$file mode=https keep-result=yes verbose=yes; \
-:delay 3; \
-/import file-name=\$file; \
-:log info \"TIF address-list updated\";" \
+add interval=1d name="Update TIF 3" on-event="{\
+\n  :local url \"https://raw.githubusercontent.com/devhuntersecurity/dns-blocklist/refs/heads/main/IPs%20for%20MikroTik/hagezi-tif-mikrotik-blackhole.rsc\";\
+\n  :local file \"tif.rsc\";\
+\n  :if ([:len [/file find where name=\$file]] > 0) do={\
+\n    /file remove [find where name=\$file];\
+\n  };\
+\n  /tool fetch url=\$url dst-path=\$file mode=https keep-result=yes;\
+\n  :delay 5s;\
+\n  /import file-name=\$file;\
+\n  :log info \"TIF address-list updated\";\
+\n}" \
 policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
 start-date=2026-08-30 start-time=22:30:00
