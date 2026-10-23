@@ -43,7 +43,7 @@ remove [find comment=IdGuard-DNS]
 add comment=IdGuard-DNS \
     host=103.157.116.69 interval=10s \
     down-script="/log warning \"Id-Guard DNS DOWN - Switch Secondary DNS\"; /ip dns set servers=103.112.162.211,103.112.162.222" \
-    up-script="/log info \"Id-Guard DNS UP - Restore Primary DNS\"; /ip dns set servers=103.157.116.69"
+    up-script="/log info \"Id-Guard DNS UP - Restore Primary DNS\"; /ip dns set servers=103.133.222.156"
 
 # -----------------------------------------------------------------------------------------
 # 5. SYSTEM SCHEDULER (Sync & Maintenance)
@@ -66,7 +66,7 @@ add comment="Auto Set DNS (Backup saat Sync)" interval=1d name="Mode Secondary [
 add comment="Auto Set DNS (Kembali ke Utama)" interval=1d name="Mode Primary IDGuard DNS" \
     policy=read,write,test start-time=02:00:00 on-event="\
     /log info \"Id-Guard Primary DNS Restored\";\
-    /ip dns set servers=103.157.116.69;\
+    /ip dns set servers=103.133.222.156;\
     /ip dns cache flush;\
     /log info \"Enable Netwatch After Sync\";\
     /tool netwatch enable [find comment=\"IdGuard-DNS\"];\
