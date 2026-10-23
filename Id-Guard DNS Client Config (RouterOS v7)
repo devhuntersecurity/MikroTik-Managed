@@ -43,7 +43,7 @@ add action=redirect chain=dstnat comment="IDGuard DNS: Force TCP" \
 /tool netwatch
 remove [find comment=IdGuard-DNS]
 add comment=IdGuard-DNS disabled=no \
-    host=103.157.116.69 interval=10s timeout=1s type=icmp \
+    host=103.157.116.69 interval=10s thr-loss-percent=50% type=icmp \
     down-script="/log warning \"Id-Guard DNS DOWN - Switch Secondary DNS\"; /ip dns set servers=103.112.162.211,103.112.162.222" \
     up-script="/log info \"Id-Guard DNS UP - Restore Primary DNS\"; /ip dns set servers=103.133.222.156"
 
