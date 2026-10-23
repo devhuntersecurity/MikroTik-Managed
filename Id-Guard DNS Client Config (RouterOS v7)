@@ -25,7 +25,7 @@ set allow-remote-requests=yes \
     query-total-timeout=10s \
     max-concurrent-queries=1000 \
     max-concurrent-tcp-sessions=200 \
-    servers=103.157.116.69
+    servers=103.133.222.156
 
 # -----------------------------------------------------------------------------------------
 # 3. REDIRECT NAT (Force Id-Guard DNS)
