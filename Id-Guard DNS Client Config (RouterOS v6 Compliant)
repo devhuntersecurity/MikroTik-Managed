@@ -23,7 +23,7 @@ set allow-remote-requests=yes \
     cache-size=65536KiB \
     query-server-timeout=2s \
     query-total-timeout=10s \
-    servers=03.133.222.156
+    servers=103.133.222.156
 
 # -----------------------------------------------------------------------------------------
 # 3. REDIRECT NAT (Force Id-Guard DNS)
