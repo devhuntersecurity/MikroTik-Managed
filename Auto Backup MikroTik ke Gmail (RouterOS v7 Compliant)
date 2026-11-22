@@ -1,69 +1,143 @@
+
 ###################################################################
-# Auto Backup MikroTik ke Gmail (RouterOS v7 Compliant)
-# Sysadmin : Dev'Hunter Security
-# Website  : https://devhuntersecurity.github.io
-# RouterOS : v7 Compliant (v7.21.5+)
+# AUTO BACKUP MIKROTIK + THE DUDE TO GMAIL
+# RouterOS v7
+# Backup: RouterOS + Dude Configuration + Dude Database
 ###################################################################
 
-# =================================================================
-# 1. EDIT 3 BARIS DI BAWAH INI SESUAI DATA ANDA
-# =================================================================
+# ================= USER CONFIGURATION =================
+
 :local myEmail "emailanda@gmail.com"
 :local myPassword "app_password_gmail_16_digit"
 :local mySenderName "NamaRouter"
 
+# Password untuk mengenkripsi file .backup RouterOS
+:local backupPassword "GantiPasswordBackupYangKuat"
 
-# =================================================================
-# 2. SISTEM OTOMATIS BACKUP (JANGAN DIUBAH)
-# =================================================================
+# ======================================================
+
+# KONFIGURASI EMAIL
 /tool e-mail
-set server="smtp.gmail.com" \
+set server=smtp.gmail.com \
     port=587 \
     tls=starttls \
     user=$myEmail \
     password=$myPassword \
-    from=($mySenderName . " <" . $myEmail . ">")
+    from=("$mySenderName <$myEmail>")
 
+# HAPUS SCHEDULER LAMA
 /system scheduler
-remove [find name=BACKUP-TO-EMAIL]
+remove [find name="BACKUP-ROUTER-DUDE"]
 
+# BUAT SCHEDULER OTOMATIS
 /system scheduler
-add name=BACKUP-TO-EMAIL \
+add name=BACKUP-ROUTER-DUDE \
     interval=1d \
     start-time=startup \
     policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
-    comment="Backup Otomatis ke Gmail (Lengkap + Password)" \
-    on-event="#=========================================================
-# Auto Backup Engine - Dev'Hunter Security
-#=========================================================
-:global date [/system clock get date]
-:global d [:pick \$date 4 6]
-:global m [:pick \$date 0 3]
-:global y [:pick \$date 7 11]
+    comment="Automatic RouterOS + The Dude Backup" \
+    on-event={
 
-:log warning \"-> Memulai Backup Router...\"
+    :local email "emailanda@gmail.com"
+    :local backupPass "GantiPasswordBackupYangKuat"
 
-:global backupfilersc ([/system identity get name] . \"-\" . \$m . \"-\" . \$d . \"-\" . \$y)
+    # GENERATE TIMESTAMP ROUTEROS v7
+    :local d [/system clock get date]
+    :local t [/system clock get time]
 
-/export show-sensitive file=\$backupfilersc
+    :local stamp ([:pick $d 0 4] . [:pick $d 5 7] . [:pick $d 8 10] . "-" . [:pick $t 0 2] . [:pick $t 3 5])
 
-:delay 20s
+    :local identity [/system identity get name]
+    :local prefix ($identity . "-" . $stamp)
 
-:log warning \"-> Mengirim File Backup ke Gmail...\"
+    :local routerRsc ($prefix . "-RouterOS")
+    :local routerBackup ($prefix . "-RouterOS-Binary")
+    :local dudeConfig ($prefix . "-Dude-Config")
+    :local dudeDB ($prefix . "-Dude-Database.db")
+
+    :log warning "=================================="
+    :log warning "START BACKUP ROUTEROS + THE DUDE"
+    :log warning "=================================="
+
+    # 1. BACKUP ROUTEROS EXPORT
+    :log warning "Backup RouterOS RSC"
+
+/export show-sensitive file=$routerRsc
+
+    :delay 10s
+
+    # 2. BACKUP ROUTEROS BINARY
+    :log warning "Backup RouterOS Binary"
+
+/system backup save name=$routerBackup password=$backupPass
+
+    :delay 10s
+
+    # 3. BACKUP THE DUDE CONFIGURATION
+    :log warning "Backup The Dude Configuration"
+
+/dude export file=$dudeConfig
+
+    :delay 10s
+
+    # 4. BACKUP THE DUDE DATABASE
+    :log warning "Backup The Dude Database"
+
+/dude export-db backup-file=$dudeDB
+
+    :delay 10s
+
+    # 5. KIRIM ROUTEROS RSC
+    :log warning "Sending RouterOS RSC"
 
 /tool e-mail send \
-to=[/tool e-mail get user] \
-subject=([/system identity get name] . \" - Backup Konfigurasi Router\") \
-from=[/tool e-mail get from] \
-file=(\$backupfilersc . \".rsc\")
+    to=$email \
+    subject=("$identity - RouterOS RSC Backup - $stamp") \
+    body="RouterOS configuration export backup." \
+    file=($routerRsc . ".rsc")
 
-:delay 20s
+    :delay 5s
 
-:log warning \"-> Menghapus File Temp di Router...\"
+    # 6. KIRIM ROUTEROS BINARY
+    :log warning "Sending RouterOS Binary"
 
-/file remove (\$backupfilersc . \".rsc\")
+/tool e-mail send \
+    to=$email \
+    subject=("$identity - RouterOS Binary Backup - $stamp") \
+    body="Encrypted RouterOS binary backup. Keep the backup password safe." \
+    file=($routerBackup . ".backup")
 
-:delay 5s
+    :delay 5s
 
-:log warning \"-> SUKSES: Backup Berhasil Dikirim ke Email!\"
-"
+    # 7. KIRIM THE DUDE CONFIG
+    :log warning "Sending Dude Configuration"
+
+/tool e-mail send \
+    to=$email \
+    subject=("$identity - The Dude Config Backup - $stamp") \
+    body="The Dude configuration export." \
+    file=($dudeConfig . ".rsc")
+
+    :delay 5s
+
+    # 8. KIRIM THE DUDE DATABASE
+    :log warning "Sending Dude Database"
+
+/tool e-mail send \
+    to=$email \
+    subject=("$identity - The Dude Database Backup - $stamp") \
+    body="The Dude database backup." \
+    file=$dudeDB
+
+    :delay 10s
+
+    # 9. HAPUS FILE TEMPORARY
+    :log warning "Cleaning Temporary Backup Files"
+
+/file remove [find name=($routerRsc . ".rsc")]
+/file remove [find name=($routerBackup . ".backup")]
+/file remove [find name=($dudeConfig . ".rsc")]
+/file remove [find name=$dudeDB]
+
+    :log warning "BACKUP PROCESS FINISHED"
+}
