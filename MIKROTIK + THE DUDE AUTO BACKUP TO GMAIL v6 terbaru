@@ -1,0 +1,111 @@
+
+# ==========================================
+# MIKROTIK + THE DUDE AUTO BACKUP TO GMAIL
+# RouterOS v6.49.22
+# ==========================================
+
+:local myEmail "emailanda@gmail.com"
+:local myPassword "APP_PASSWORD_GMAIL"
+:local mySenderName "NamaRouter"
+:local backupPassword "PASSWORD_BACKUP_KUAT"
+
+/tool e-mail
+set server=smtp.gmail.com \
+    port=587 \
+    start-tls=yes \
+    user=$myEmail \
+    password=$myPassword \
+    from=("$mySenderName <$myEmail>")
+
+/system scheduler
+remove [find name="BACKUP-ROUTER-DUDE"]
+
+/system scheduler
+add name=BACKUP-ROUTER-DUDE \
+    start-time=startup \
+    interval=1d \
+    policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+    comment="Backup RouterOS dan The Dude ke Gmail" \
+    on-event={
+
+    :local email "emailanda@gmail.com"
+    :local pass "PASSWORD_BACKUP_KUAT"
+
+    :local identity [/system identity get name]
+    :local date [/system clock get date]
+    :local time [/system clock get time]
+
+    :local stamp ($date . "-" . [:pick $time 0 2] . [:pick $time 3 5])
+    :local prefix ($identity . "-" . $stamp)
+
+    :local rsc ($prefix . "-RouterOS")
+    :local bin ($prefix . "-RouterOS-Binary")
+    :local dude ($prefix . "-TheDude")
+    :local db ($prefix . "-TheDude.db")
+
+    :log warning "START BACKUP ROUTEROS + THE DUDE"
+
+    # 1. ROUTEROS EXPORT
+    /export file=$rsc
+
+    :delay 10s
+
+    # 2. ROUTEROS BINARY
+    /system backup save name=$bin password=$pass
+
+    :delay 10s
+
+    # 3. THE DUDE CONFIG EXPORT
+    /dude export file=$dude
+
+    :delay 10s
+
+    # 4. THE DUDE DATABASE
+    /dude export-db backup-file=$db
+
+    :delay 30s
+
+    # 5. SEND ROUTEROS EXPORT
+    /tool e-mail send \
+        to=$email \
+        subject=("$identity RouterOS RSC Backup") \
+        body="RouterOS configuration backup" \
+        file=($rsc . ".rsc")
+
+    :delay 10s
+
+    # 6. SEND ROUTEROS BINARY
+    /tool e-mail send \
+        to=$email \
+        subject=("$identity RouterOS Binary Backup") \
+        body="Encrypted RouterOS backup. Keep password safe." \
+        file=($bin . ".backup")
+
+    :delay 10s
+
+    # 7. SEND THE DUDE CONFIG
+    /tool e-mail send \
+        to=$email \
+        subject=("$identity The Dude Configuration") \
+        body="The Dude configuration export" \
+        file=($dude . ".rsc")
+
+    :delay 10s
+
+    # 8. SEND THE DUDE DATABASE
+    /tool e-mail send \
+        to=$email \
+        subject=("$identity The Dude Database") \
+        body="The Dude database backup"
+        file=$db
+
+    :delay 10s
+
+    # 9. CLEANUP
+    /file remove [find name=($rsc . ".rsc")]
+    /file remove [find name=($bin . ".backup")]
+    /file remove [find name=($dude . ".rsc")]
+    /file remove [find name=$db]
+
+    :log warning "BACKUP PROCESS FINISHED"
+}
